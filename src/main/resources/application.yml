@@ -8,19 +8,3 @@ spring:
       uri: http://localhost:9200
       username: conf
       password: f5426fe8-bcbe-40d1-bba0-11156e880516
-eureka:
-  instance:
-    prefer-ip-address: true
-  client:
-    register-with-eureka: true
-    fetch-registry: true
-    service-url:
-      defaultZone: http://localhost:9201/eureka/
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      roles: ACTUATOR_ADMIN
