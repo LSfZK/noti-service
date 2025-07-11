@@ -20,7 +20,7 @@ public class NotificationService {
     private final JavaMailSender mailSender;
     private final FirebaseMessaging fcm;
 
-    @KafkaListener(topics = "store-add-events")
+    @KafkaListener(topics = "business-registrations", groupId = "notification-group")
     public void handleStoreAdd(StoreAddEvent event) {
         // 1. Send push notification
         sendPushNotification(event.deviceToken(),
