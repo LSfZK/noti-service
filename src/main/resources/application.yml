@@ -1,10 +1,3 @@
 spring:
   application:
     name: noti-service
-  config:
-    import: configserver:http://localhost:9200
-  cloud:
-    config:
-      uri: http://localhost:9200
-      username: conf
-      password: f5426fe8-bcbe-40d1-bba0-11156e880516
