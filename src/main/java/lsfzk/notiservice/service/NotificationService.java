@@ -5,12 +5,16 @@ import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import lombok.RequiredArgsConstructor;
-import lsfzk.notiservice.model.StoreAddEvent;
+import lsfzk.notiservice.event.BusinessRegistrationEvent;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -19,21 +23,41 @@ public class NotificationService {
 
     private final JavaMailSender mailSender;
     private final FirebaseMessaging fcm;
+    private final WebClient.Builder webClientBuilder;
 
     @KafkaListener(topics = "business-registrations", groupId = "notification-group")
-    public void handleStoreAdd(StoreAddEvent event) {
+    public void handleBusinessRegistrations(BusinessRegistrationEvent event) {
         // 1. Send push notification
-        sendPushNotification(event.deviceToken(),
-                "Store Add Request",
-                String.format("User %s has requested to add a new store: %s",
-                        event.userId(), event.storeName()));
-//                formatMessage(event));
+        getDeviceTokens(event.userId())
+                .subscribe(tokens -> {
+                    if (tokens != null && !tokens.isEmpty()) {
+                        System.out.println("Found tokens for user " + event.userId() + ": " + tokens);
+                        // 2. Send the push notification using these tokens.
+                        for (String token : tokens) {
+                            try {
+                                sendPushNotification(token,
+                                        "Store Add Request",
+                                        String.format("User %s has requested to add a new store: %s",
+                                                event.userId(), event.businessName()));
+                            } catch (RuntimeException e) {
+                                System.err.println("Failed to send notification to token " + token + ": " + e.getMessage());
+                            }
+                        }
+                    } else {
+                        System.out.println("No device tokens found for user " + event.userId());
+                    }
+                });
 
+        // for test
+        List<String> emailList = List.of("jerrydevengineer@gmail.com");
         // 2. Send Email notification
-        String result = sendMultipleEmails(event.adminEmails(),
+        String result = sendMultipleEmails(
+//                event.adminEmails(),
+                emailList,
                 "New Store Addition Request",
                 String.format("User %s has requested to add a new store: %s\nStore ID: %s\n\nApprove at: https://admin.example.com",
-                        event.userId(), event.storeName(), event.storeId()));
+                        event.userId(), event.businessName(), event.registrationId())
+        );
     }
 
     public String sendPushNotification(String deviceToken, String title, String body) {
@@ -70,23 +94,23 @@ public class NotificationService {
         return "Emails sent to " + recipients.size() + " recipients with subject: " + subject;
     }
 
-//    public String sendToTopic(String topic, String title, String body) {
-//        Notification notification = Notification.builder()
-//                .setTitle(title)
-//                .setBody(body)
-//                .build();
-//
-//        Message message = Message.builder()
-//                .setTopic(topic)
-//                .setNotification(notification)
-//                .build();
-//
-//        try {
-//            return FirebaseMessaging.getInstance().send(message);
-//        } catch (FirebaseMessagingException e) {
-//            throw new RuntimeException("Error sending topic notification", e);
-//        }
-//    }
+    public String sendToTopic(String topic, String title, String body) {
+        Notification notification = Notification.builder()
+                .setTitle(title)
+                .setBody(body)
+                .build();
+
+        Message message = Message.builder()
+                .setTopic(topic)
+                .setNotification(notification)
+                .build();
+
+        try {
+            return FirebaseMessaging.getInstance().send(message);
+        } catch (FirebaseMessagingException e) {
+            throw new RuntimeException("Error sending topic notification", e);
+        }
+    }
 
 //    private String formatMessage(RoleUpgradeEvent event) {
 //        return String.format("User %s requested %s role",
@@ -97,4 +121,18 @@ public class NotificationService {
 //        return String.format("User ID: %s\nRequested Role: %s\n\nApprove at: https://admin.example.com",
 //                event.userId(), event.requestedRole());
 //    }
+
+    /**
+     * Makes a synchronous call to the user-service's internal endpoint.
+     * @param userId The ID of the user whose tokens are needed.
+     * @return A Mono containing a list of device token strings.
+     */
+    private Mono<List<String>> getDeviceTokens(Long userId) {
+        // The "user-service" part of the URL is the service name registered in Eureka.
+        return webClientBuilder.build().get()
+                .uri("http://user-service/internal/users/{userId}/devices", userId)
+                .retrieve()
+                // Use ParameterizedTypeReference to provide detailed generic type information.
+                .bodyToMono(new ParameterizedTypeReference<List<String>>() {});
+    }
 }

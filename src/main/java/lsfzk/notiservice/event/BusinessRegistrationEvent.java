@@ -4,6 +4,5 @@ public record BusinessRegistrationEvent(
         Long userId,
         Long registrationId,
         String userNickname,
-        String businessName,
-        String fileName
+        String businessName
 ) { }
