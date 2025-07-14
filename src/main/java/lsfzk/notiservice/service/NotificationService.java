@@ -1,5 +1,6 @@
 package lsfzk.notiservice.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -26,9 +26,9 @@ public class NotificationService {
     private final WebClient.Builder webClientBuilder;
 
     @KafkaListener(topics = "business-registrations", groupId = "notification-group")
-    public void handleBusinessRegistrations(BusinessRegistrationEvent event) {
+    public void processNewBusinessRegistration(BusinessRegistrationEvent event) {
         // 1. Send push notification
-        getDeviceTokens(event.userId())
+        getDeviceTokens(1L)
                 .subscribe(tokens -> {
                     if (tokens != null && !tokens.isEmpty()) {
                         System.out.println("Found tokens for user " + event.userId() + ": " + tokens);
