@@ -1,6 +1,7 @@
 package lsfzk.notiservice.consumer;
 
-import lsfzk.notiservice.event.BusinessRegistrationEvent;
+//import lsfzk.notiservice.event.BusinessRegistrationEvent;
+import lsfzk.events.BusinessRegistrationEvent;
 //import lsfzk.notiservice.event.OrderShippedEvent; // Hypothetical new event
 import lsfzk.notiservice.service.NotificationService;
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ public class KafkaConsumer {
      */
     @KafkaListener(topics = "business-registrations", groupId = "notification-group")
     public void consumeBusinessRegistrationEvent(BusinessRegistrationEvent event) {
+        log.info("Received BusinessRegistrationEvent {}", event);
         log.info("Consumed BusinessRegistrationEvent, delegating to NotificationService...");
         notificationService.processNewBusinessRegistration(event);
     }

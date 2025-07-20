@@ -15,6 +15,7 @@ java {
 
 repositories {
     mavenCentral()
+    maven { url 'https://jitpack.io' }
 }
 
 ext {
@@ -41,6 +42,8 @@ dependencies {
     implementation 'org.projectlombok:lombok:1.18.28'
     annotationProcessor 'org.projectlombok:lombok'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+//    implementation 'lsfzk:event-models:1.0.0'
+    implementation 'com.github.LSfZK:event-models:main-SNAPSHOT'
 }
 
 dependencyManagement {

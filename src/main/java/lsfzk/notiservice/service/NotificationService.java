@@ -6,7 +6,9 @@ import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import lombok.RequiredArgsConstructor;
-import lsfzk.notiservice.event.BusinessRegistrationEvent;
+import lsfzk.events.BusinessRegistrationEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.mail.SimpleMailMessage;
@@ -24,6 +26,7 @@ public class NotificationService {
     private final JavaMailSender mailSender;
     private final FirebaseMessaging fcm;
     private final WebClient.Builder webClientBuilder;
+    private static final Logger businessLogger = LoggerFactory.getLogger("userLogger");
 
     @KafkaListener(topics = "business-registrations", groupId = "notification-group")
     public void processNewBusinessRegistration(BusinessRegistrationEvent event) {
@@ -32,13 +35,18 @@ public class NotificationService {
                 .subscribe(tokens -> {
                     if (tokens != null && !tokens.isEmpty()) {
                         System.out.println("Found tokens for user " + event.userId() + ": " + tokens);
+                        businessLogger.info("Found tokens for user {}: {}", event.userId(), tokens);
                         // 2. Send the push notification using these tokens.
                         for (String token : tokens) {
                             try {
+                                System.out.println("Sending push notification to token: " + token);
+                                businessLogger.info("Sending push notification to token: " + token);
                                 sendPushNotification(token,
                                         "Store Add Request",
                                         String.format("User %s has requested to add a new store: %s",
                                                 event.userId(), event.businessName()));
+                                System.out.println("Push notification sent successfully to token: " + token);
+                                businessLogger.info("Push notification sent successfully to token: " + token);
                             } catch (RuntimeException e) {
                                 System.err.println("Failed to send notification to token " + token + ": " + e.getMessage());
                             }
