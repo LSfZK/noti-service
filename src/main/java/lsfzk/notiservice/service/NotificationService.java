@@ -7,6 +7,8 @@ import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
 import lombok.RequiredArgsConstructor;
 import lsfzk.events.BusinessRegistrationEvent;
+import lsfzk.notiservice.model.NotificationEntity;
+import lsfzk.notiservice.repository.NotificationRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
@@ -27,25 +29,28 @@ public class NotificationService {
     private final FirebaseMessaging fcm;
     private final WebClient.Builder webClientBuilder;
     private static final Logger businessLogger = LoggerFactory.getLogger("userLogger");
+    private final NotificationRepository notificationRepo;
 
     @KafkaListener(topics = "business-registrations", groupId = "notification-group")
     public void processNewBusinessRegistration(BusinessRegistrationEvent event) {
+        NotificationEntity notification = new NotificationEntity(event);
+        notificationRepo.save(notification);
+
+        if(Boolean.FALSE.equals((hasData(getDeviceTokens(1L))).block())) {
+            businessLogger.info("User {} has no active tokens. Notification saved to DB only.", notification.getRecipientId());
+            return; // Only DB save, no Push
+        }
         // 1. Send push notification
         getDeviceTokens(1L)
                 .subscribe(tokens -> {
                     if (tokens != null && !tokens.isEmpty()) {
-                        System.out.println("Found tokens for user " + event.userId() + ": " + tokens);
                         businessLogger.info("Found tokens for user {}: {}", event.userId(), tokens);
                         // 2. Send the push notification using these tokens.
                         for (String token : tokens) {
                             try {
-                                System.out.println("Sending push notification to token: " + token);
                                 businessLogger.info("Sending push notification to token: " + token);
                                 sendPushNotification(token,
-                                        "Store Add Request",
-                                        String.format("User %s has requested to add a new store: %s",
-                                                event.userId(), event.businessName()));
-                                System.out.println("Push notification sent successfully to token: " + token);
+                                        notification);
                                 businessLogger.info("Push notification sent successfully to token: " + token);
                             } catch (RuntimeException e) {
                                 System.err.println("Failed to send notification to token " + token + ": " + e.getMessage());
@@ -68,15 +73,17 @@ public class NotificationService {
         );
     }
 
-    public String sendPushNotification(String deviceToken, String title, String body) {
+    public String sendPushNotification(String deviceToken, NotificationEntity noti) {
         Notification notification = Notification.builder()
-                .setTitle(title)
-                .setBody(body)
+                .setTitle(noti.getTitle())
+                .setBody(noti.getMessage())
                 .build();
 
         Message message = Message.builder()
                 .setToken(deviceToken)
                 .setNotification(notification)
+                .putData("route", noti.getRoute()) // For clicking to navigate
+                .putData("notificationId", noti.getId().toString()) // For tracking read status later
                 .build();
 
         try {
@@ -142,5 +149,11 @@ public class NotificationService {
                 .retrieve()
                 // Use ParameterizedTypeReference to provide detailed generic type information.
                 .bodyToMono(new ParameterizedTypeReference<List<String>>() {});
+    }
+
+    public Mono<Boolean> hasData(Mono<List<String>> monoList) {
+        return monoList
+                .map(list -> !list.isEmpty()) // Check list content
+                .defaultIfEmpty(false);       // If Mono itself was empty, return false
     }
 }
