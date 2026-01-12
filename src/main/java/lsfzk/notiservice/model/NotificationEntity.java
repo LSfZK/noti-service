@@ -51,7 +51,7 @@ public class NotificationEntity {
     }
 
     public NotificationEntity(BusinessRegistrationEvent event) {
-        this.recipientId = event.userId();
+        this.recipientId = 1L;
         this.title = "Business Registration Request";
         this.message = String.format("User %s has requested to add a new store: %s",
                 event.userId(), event.businessName());

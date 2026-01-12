@@ -9,9 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/noti")
+@RequestMapping("/notis")
 @RequiredArgsConstructor
 public class NotificationController {
 
@@ -38,12 +39,12 @@ public class NotificationController {
     // 3. Mark as Read (When user clicks the bell or a specific item)
     @PatchMapping("/{id}/read")
     @Transactional
-    public ResponseEntity<Void> markAsRead(@PathVariable Long id) {
+    public ResponseEntity<Map<?,?>> markAsRead(@PathVariable Long id) {
         notificationRepo.findById(id).ifPresent(n -> {
             n.setRead(true);
             notificationRepo.save(n);
         });
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(Map.of("success", true));
     }
 
     @PostMapping("/send-to-device")
