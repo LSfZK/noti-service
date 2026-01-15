@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lsfzk.events.BusinessRegistrationEvent;
+import lsfzk.events.PromoteRequestEvent;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
@@ -55,5 +56,12 @@ public class NotificationEntity {
         this.title = "Business Registration Request";
         this.message = String.format("User %s has requested to add a new store: %s",
                 event.userId(), event.businessName());
+    }
+
+    public NotificationEntity(PromoteRequestEvent event) {
+        this.recipientId = 4L;
+        this.title = "User Promotion Request";
+        this.message = String.format("User %s has requested to be promoted",
+                event.userId());
     }
 }
