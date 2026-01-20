@@ -7,6 +7,7 @@ import com.google.firebase.messaging.Notification;
 import lombok.RequiredArgsConstructor;
 import lsfzk.events.BusinessRegistrationEvent;
 import lsfzk.events.PromoteRequestEvent;
+import lsfzk.events.PromoteResponseEvent;
 import lsfzk.notiservice.model.NotificationEntity;
 import lsfzk.notiservice.repository.NotificationRepository;
 import org.slf4j.Logger;
@@ -28,7 +29,9 @@ public class NotificationService {
     private final JavaMailSender mailSender;
     private final FirebaseMessaging fcm;
     private final WebClient.Builder webClientBuilder;
-    private static final Logger businessLogger = LoggerFactory.getLogger("userLogger");
+//    private static final Logger businessLogger = LoggerFactory.getLogger("userLogger");
+    private static final Logger notiLogger = LoggerFactory.getLogger("notiLogger");
+    private static final Logger userLogger = LoggerFactory.getLogger("userLogger");
     private final NotificationRepository notificationRepo;
 
     @KafkaListener(topics = "business-registrations", groupId = "notification-group")
@@ -37,27 +40,27 @@ public class NotificationService {
         notificationRepo.save(notification);
 
         if(Boolean.FALSE.equals((hasData(getDeviceTokens(4L))).block())) {
-            businessLogger.info("User {} has no active tokens. Notification saved to DB only.", notification.getRecipientId());
+            userLogger.info("User {} has no active tokens. Notification saved to DB only.", notification.getRecipientId());
             return; // Only DB save, no Push
         }
         // 1. Send push notification
         getDeviceTokens(4L)
                 .subscribe(tokens -> {
                     if (tokens != null && !tokens.isEmpty()) {
-                        businessLogger.info("Found tokens for user {}: {}", event.userId(), tokens);
+                        notiLogger.info("Found tokens for user {}: {}", event.userId(), tokens);
                         // 2. Send the push notification using these tokens.
                         for (String token : tokens) {
                             try {
-                                businessLogger.info("Sending push notification to token: " + token);
+                                notiLogger.info("Sending push notification to token: " + token);
                                 sendPushNotification(token,
                                         notification);
-                                businessLogger.info("Push notification sent successfully to token: " + token);
+                                notiLogger.info("Push notification sent successfully to token: " + token);
                             } catch (RuntimeException e) {
-                                System.err.println("Failed to send notification to token " + token + ": " + e.getMessage());
+                                notiLogger.info("Failed to send notification to token " + token + ": " + e.getMessage());
                             }
                         }
                     } else {
-                        System.out.println("No device tokens found for user " + event.userId());
+                        notiLogger.info("No device tokens found for user " + event.userId());
                     }
                 });
 
@@ -79,22 +82,24 @@ public class NotificationService {
         notificationRepo.save(notification);
 
         if(Boolean.FALSE.equals((hasData(getDeviceTokens(4L))).block())) {
-            businessLogger.info("User {} has no active tokens. Notification saved to DB only.", notification.getRecipientId());
+            userLogger.info("User {} has no active tokens. Notification saved to DB only.", notification.getRecipientId());
             return; // Only DB save, no Push
         }
         // Send push notification
         sendMultiplePush(List.of(4L), notification.getId(), notification);
+    }
 
-//        // for test
-//        List<String> emailList = List.of("jerrydevengineer@gmail.com");
-//        // 2. Send Email notification
-//        String result = sendMultipleEmails(
-////                event.adminEmails(),
-//                emailList,
-//                "New Store Addition Request",
-//                String.format("User %s has requested to add a new store: %s\nStore ID: %s\n\nApprove at: https://admin.example.com",
-//                        event.userId(), event.businessName(), event.registrationId())
-//        );
+    @KafkaListener(topics = "promote-response", groupId = "notification-group")
+    public void processPromoteResponse(PromoteResponseEvent event) {
+        NotificationEntity notification = new NotificationEntity(event);
+        notificationRepo.save(notification);
+
+        if(Boolean.FALSE.equals((hasData(getDeviceTokens(4L))).block())) {
+            userLogger.info("User {} has no active tokens. Notification saved to DB only.", notification.getRecipientId());
+            return; // Only DB save, no Push
+        }
+        // Send push notification
+        sendMultiplePush(List.of(notification.getRecipientId()), notification.getId(), notification);
     }
 
     public void sendMultiplePush(List<Long> receiversId, Long eventId, NotificationEntity notification) {
@@ -105,23 +110,23 @@ public class NotificationService {
     }
 
     public void sendPush(Long receiverId, Long eventId, NotificationEntity notification) {
-        getDeviceTokens(4L)
+        getDeviceTokens(receiverId)
                 .subscribe(tokens -> {
                     if (tokens != null && !tokens.isEmpty()) {
-                        businessLogger.info("Found tokens for user {}: {}", receiverId, tokens);
+                        notiLogger.info("Found tokens for user {}: {}", receiverId, tokens);
                         // 2. Send the push notification using these tokens.
                         for (String token : tokens) {
                             try {
-                                businessLogger.info("Sending push notification to token: " + token + " eventId: " + eventId);
+                                notiLogger.info("Sending push notification to token: " + token + " eventId: " + eventId);
                                 sendPushNotification(token,
                                         notification);
-                                businessLogger.info("Push notification sent successfully to token: " + token);
+                                notiLogger.info("Push notification sent successfully to token: " + token);
                             } catch (RuntimeException e) {
-                                System.err.println("Failed to send notification to token " + token + " eventId: " + eventId + ": " + e.getMessage());
+                                notiLogger.info("Failed to send notification to token " + token + " eventId: " + eventId + ": " + e.getMessage());
                             }
                         }
                     } else {
-                        System.out.println("No device tokens found for user " + receiverId);
+                        notiLogger.info("No device tokens found for user " + receiverId);
                     }
                 });
     }
@@ -135,7 +140,7 @@ public class NotificationService {
         Message message = Message.builder()
                 .setToken(deviceToken)
                 .setNotification(notification)
-                .putData("route", noti.getRoute()) // For clicking to navigate
+//                .putData("route", noti.getRoute()) // For clicking to navigate
                 .putData("notificationId", noti.getId().toString()) // For tracking read status later
                 .build();
 

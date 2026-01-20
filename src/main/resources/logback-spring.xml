@@ -34,29 +34,41 @@
 
     <!-- Appender 3: ROLLING_FILE_ACONTROLLER (For AController specific logs) -->
     <!-- This is a dedicated appender just for your controller's logs. -->
-<!--    <appender name="ROLLING_FILE_USER" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
-<!--        &lt;!&ndash; It writes to a separate subdirectory &ndash;&gt;-->
-<!--        <file>${LOG_PATH}/user.log</file>-->
-<!--        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
-<!--            <fileNamePattern>${LOG_PATH}/user-%d{yyyy-MM-dd}.log</fileNamePattern>-->
-<!--            <maxHistory>30</maxHistory>-->
-<!--        </rollingPolicy>-->
-<!--        <encoder>-->
-<!--            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>-->
-<!--        </encoder>-->
-<!--    </appender>-->
-
-    <appender name="ROLLING_FILE_BUSINESS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <appender name="ROLLING_FILE_NOTI" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <!-- It writes to a separate subdirectory -->
-        <file>${LOG_PATH}/business.log</file>
+        <file>${LOG_PATH}/noti.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${LOG_PATH}/business-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${LOG_PATH}/noti-%d{yyyy-MM-dd}.log</fileNamePattern>
             <maxHistory>30</maxHistory>
         </rollingPolicy>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
+
+    <appender name="ROLLING_FILE_USER" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- It writes to a separate subdirectory -->
+        <file>${LOG_PATH}/user.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/user-%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+<!--    <appender name="ROLLING_FILE_BUSINESS" class="ch.qos.logback.core.rolling.RollingFileAppender">-->
+<!--        &lt;!&ndash; It writes to a separate subdirectory &ndash;&gt;-->
+<!--        <file>${LOG_PATH}/business.log</file>-->
+<!--        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
+<!--            <fileNamePattern>${LOG_PATH}/business-%d{yyyy-MM-dd}.log</fileNamePattern>-->
+<!--            <maxHistory>30</maxHistory>-->
+<!--        </rollingPolicy>-->
+<!--        <encoder>-->
+<!--            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>-->
+<!--        </encoder>-->
+<!--    </appender>-->
 
 
     <!-- ============================================================== -->
@@ -72,18 +84,25 @@
 
     <!-- A custom, named logger for our AController. -->
     <!-- We give it a specific name, "AControllerLogger". -->
-<!--    <logger name="user" level="DEBUG" additivity="false">-->
-<!--        &lt;!&ndash; It will log messages of level DEBUG or higher ONLY to its dedicated file. &ndash;&gt;-->
-<!--        <appender-ref ref="ROLLING_FILE_USER" />-->
-<!--        &lt;!&ndash; We also add console logging for convenience during development. &ndash;&gt;-->
-<!--        <appender-ref ref="CONSOLE" />-->
-<!--    </logger>-->
-
-    <logger name="business" level="DEBUG" additivity="false">
+    <logger name="noti" level="DEBUG" additivity="false">
         <!-- It will log messages of level DEBUG or higher ONLY to its dedicated file. -->
-        <appender-ref ref="ROLLING_FILE_BUSINESS" />
+        <appender-ref ref="ROLLING_FILE_NOTI" />
         <!-- We also add console logging for convenience during development. -->
         <appender-ref ref="CONSOLE" />
     </logger>
+
+    <logger name="user" level="DEBUG" additivity="false">
+        <!-- It will log messages of level DEBUG or higher ONLY to its dedicated file. -->
+        <appender-ref ref="ROLLING_FILE_USER" />
+        <!-- We also add console logging for convenience during development. -->
+        <appender-ref ref="CONSOLE" />
+    </logger>
+
+<!--    <logger name="business" level="DEBUG" additivity="false">-->
+<!--        &lt;!&ndash; It will log messages of level DEBUG or higher ONLY to its dedicated file. &ndash;&gt;-->
+<!--        <appender-ref ref="ROLLING_FILE_BUSINESS" />-->
+<!--        &lt;!&ndash; We also add console logging for convenience during development. &ndash;&gt;-->
+<!--        <appender-ref ref="CONSOLE" />-->
+<!--    </logger>-->
 
 </configuration>
