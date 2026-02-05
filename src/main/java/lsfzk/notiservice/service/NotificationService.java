@@ -102,11 +102,23 @@ public class NotificationService {
         sendMultiplePush(List.of(notification.getRecipientId()), notification.getId(), notification);
     }
 
+    @KafkaListener(topics = "business-reg-result", groupId = "notification-group")
+    public void processNewBusinessRegResult(BusinessRegistrationEvent event) {
+        NotificationEntity notification = new NotificationEntity(event);
+        notificationRepo.save(notification);
+
+        if(Boolean.FALSE.equals((hasData(getDeviceTokens(4L))).block())) {
+            userLogger.info("User {} has no active tokens. Notification saved to DB only.", notification.getRecipientId());
+            return; // Only DB save, no Push
+        }
+        // Send push notification
+        sendMultiplePush(List.of(notification.getRecipientId()), notification.getId(), notification);
+    }
+
     public void sendMultiplePush(List<Long> receiversId, Long eventId, NotificationEntity notification) {
         receiversId.forEach(receiverId -> {
             sendPush(receiverId, eventId, notification);
         });
-
     }
 
     public void sendPush(Long receiverId, Long eventId, NotificationEntity notification) {
